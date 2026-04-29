@@ -30,7 +30,10 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        // Clear any cached data
+        sessionStorage.clear();
+        // Force reload to clear any cached state
+        window.location.replace('/login');
       }
     }
     return Promise.reject(error);

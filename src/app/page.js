@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export default function Home() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function Home() {
   useEffect(() => {
     // Wait for auth to finish loading
     if (!loading) {
+      // Use replace to avoid back button issues
       if (isAuthenticated) {
         router.replace('/dashboard');
       } else {
@@ -19,12 +21,11 @@ export default function Home() {
     }
   }, [isAuthenticated, loading, router]);
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="flex flex-col items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <p className="mt-4 text-gray-600 font-medium">Loading application...</p>
-      </div>
-    </div>
-  );
+  // Show loading only when actually loading
+  if (loading) {
+    return <LoadingScreen message="Checking authentication" />;
+  }
+
+  // Return null while redirecting to prevent flash
+  return null;
 }

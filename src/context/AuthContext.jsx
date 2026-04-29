@@ -3,6 +3,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { login as loginApi } from '@/api/auth.api';
+import { clearAuthData, isTokenValid, forceLogout } from '@/utils/authUtils';
+import { useAuthTimeout } from '@/hooks/useAuthTimeout';
 
 const AuthContext = createContext();
 
@@ -19,32 +21,41 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Use timeout hook to prevent infinite loading
+  useAuthTimeout(loading, isAuthenticated);
+
   useEffect(() => {
     // Check for token on mount
     const initAuth = () => {
       try {
         const token = localStorage.getItem('token');
-        if (token) {
+        if (token && isTokenValid(token)) {
           const decoded = jwtDecode(token);
-          // Check if token is expired
-          if (decoded.exp * 1000 > Date.now()) {
-            setUser(decoded);
-            setIsAuthenticated(true);
-          } else {
-            console.warn('Token expired, removing...');
-            localStorage.removeItem('token');
+          setUser(decoded);
+          setIsAuthenticated(true);
+        } else {
+          // Token is invalid or expired
+          if (token) {
+            console.warn('Token expired or invalid, clearing...');
+            clearAuthData();
           }
+          setUser(null);
+          setIsAuthenticated(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        localStorage.removeItem('token');
+        clearAuthData();
+        setUser(null);
+        setIsAuthenticated(false);
       } finally {
         // Ensure loading is set to false regardless of success or failure
         setLoading(false);
       }
     };
 
-    initAuth();
+    // Add a small delay to prevent flash of loading state
+    const timeoutId = setTimeout(initAuth, 50);
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const login = async (email, password) => {
@@ -72,9 +83,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
-    setIsAuthenticated(false);
+    try {
+      forceLogout();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback: still clear state even if forceLogout fails
+      setUser(null);
+      setIsAuthenticated(false);
+      clearAuthData();
+    }
   };
 
   return (
