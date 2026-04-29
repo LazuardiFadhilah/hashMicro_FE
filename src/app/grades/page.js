@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import PrivateRoute from '@/components/PrivateRoute';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
+import Toast from '@/components/ui/Toast';
 import { getAll as getStudents } from '@/api/students.api';
 import { getAll as getSubjects } from '@/api/subjects.api';
 import { assign, getReport } from '@/api/grades.api';
@@ -15,6 +16,7 @@ export default function GradesPage() {
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
     studentId: '',
     subjectId: '',
@@ -75,18 +77,21 @@ export default function GradesPage() {
 
     try {
       await assign({
-        studentId: parseInt(formData.studentId),
-        subjectId: parseInt(formData.subjectId),
+        studentId: formData.studentId, // MongoDB ObjectId as string
+        subjectId: formData.subjectId, // MongoDB ObjectId as string
         score: parseFloat(formData.score),
         attendance: parseFloat(formData.attendance),
       });
 
       setFormData({ studentId: '', subjectId: '', score: '', attendance: '' });
       fetchData();
-      alert('Grade assigned successfully!');
+      setToast({ message: 'Grade assigned successfully!', type: 'success' });
     } catch (error) {
       console.error('Error assigning grade:', error);
-      alert(error.response?.data?.message || 'Error assigning grade');
+      setToast({ 
+        message: error.response?.data?.message || 'Error assigning grade', 
+        type: 'error' 
+      });
     } finally {
       setSubmitting(false);
     }
@@ -103,6 +108,14 @@ export default function GradesPage() {
   return (
     <PrivateRoute>
       <div className="flex h-screen bg-gray-50">
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+        
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <div className="flex-1 flex flex-col lg:ml-64">
@@ -130,7 +143,7 @@ export default function GradesPage() {
                     >
                       <option value="">Select Student</option>
                       {students.map((student) => (
-                        <option key={student.id} value={student.id}>
+                        <option key={student._id} value={student._id}>
                           {student.name}
                         </option>
                       ))}
@@ -149,7 +162,7 @@ export default function GradesPage() {
                     >
                       <option value="">Select Subject</option>
                       {subjects.map((subject) => (
-                        <option key={subject.id} value={subject.id}>
+                        <option key={subject._id} value={subject._id}>
                           {subject.name}
                         </option>
                       ))}

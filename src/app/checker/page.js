@@ -4,6 +4,7 @@ import { useState } from 'react';
 import PrivateRoute from '@/components/PrivateRoute';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
+import Toast from '@/components/ui/Toast';
 import { check } from '@/api/checker.api';
 
 export default function CheckerPage() {
@@ -13,6 +14,7 @@ export default function CheckerPage() {
   const [type, setType] = useState('sensitive');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +27,10 @@ export default function CheckerPage() {
       setResult(response.data);
     } catch (error) {
       console.error('Error checking characters:', error);
-      alert(error.response?.data?.message || 'Error checking characters');
+      setToast({ 
+        message: error.response?.data?.message || 'Error checking characters', 
+        type: 'error' 
+      });
     } finally {
       setLoading(false);
     }
@@ -57,6 +62,14 @@ export default function CheckerPage() {
   return (
     <PrivateRoute>
       <div className="flex h-screen bg-gray-50">
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+        
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <div className="flex-1 flex flex-col lg:ml-64">

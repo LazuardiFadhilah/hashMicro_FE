@@ -7,6 +7,7 @@ import TopBar from '@/components/layout/TopBar';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Pagination from '@/components/ui/Pagination';
+import Toast from '@/components/ui/Toast';
 import { FiEdit2, FiTrash2, FiPlus } from 'react-icons/fi';
 import { getAll, create, update, softDelete } from '@/api/students.api';
 
@@ -21,6 +22,7 @@ export default function StudentsPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [pagination, setPagination] = useState({});
+  const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     studentId: '',
@@ -52,6 +54,13 @@ export default function StudentsPage() {
     }
   };
 
+  const generateStudentId = () => {
+    // Generate format: STU + timestamp last 6 digits + random 2 digits
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `STU${timestamp}${random}`;
+  };
+
   const handleOpenModal = (student = null) => {
     if (student) {
       setSelectedStudent(student);
@@ -63,7 +72,12 @@ export default function StudentsPage() {
       });
     } else {
       setSelectedStudent(null);
-      setFormData({ name: '', studentId: '', class: '', age: '' });
+      setFormData({ 
+        name: '', 
+        studentId: generateStudentId(), // Auto-generate for new student
+        class: '', 
+        age: '' 
+      });
     }
     setModalOpen(true);
   };
@@ -79,14 +93,22 @@ export default function StudentsPage() {
     try {
       if (selectedStudent) {
         await update(selectedStudent.id, formData);
+        setToast({ message: 'Student updated successfully!', type: 'success' });
+        handleCloseModal();
+        fetchStudents();
       } else {
         await create(formData);
+        setToast({ message: 'Student created successfully!', type: 'success' });
+        handleCloseModal();
+        fetchStudents();
       }
-      handleCloseModal();
-      fetchStudents();
     } catch (error) {
       console.error('Error saving student:', error);
-      alert(error.response?.data?.message || 'Error saving student');
+      setToast({ 
+        message: error.response?.data?.message || 'Error saving student', 
+        type: 'error' 
+      });
+      // Don't close modal on error so user can fix the issue
     }
   };
 
@@ -95,10 +117,14 @@ export default function StudentsPage() {
       await softDelete(deleteId);
       setConfirmOpen(false);
       setDeleteId(null);
+      setToast({ message: 'Student deleted successfully!', type: 'success' });
       fetchStudents();
     } catch (error) {
       console.error('Error deleting student:', error);
-      alert(error.response?.data?.message || 'Error deleting student');
+      setToast({ 
+        message: error.response?.data?.message || 'Error deleting student', 
+        type: 'error' 
+      });
     }
   };
 
@@ -110,6 +136,14 @@ export default function StudentsPage() {
   return (
     <PrivateRoute>
       <div className="flex h-screen bg-gray-50">
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+        
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <div className="flex-1 flex flex-col lg:ml-64">
@@ -243,13 +277,31 @@ export default function StudentsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Student ID
             </label>
-            <input
-              type="text"
-              value={formData.studentId}
-              onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={formData.studentId}
+                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                required
+                disabled={!!selectedStudent}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  selectedStudent ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
+                placeholder="Auto-generated (editable)"
+              />
+              {!selectedStudent && (
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, studentId: generateStudentId() })}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Regenerate
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              {selectedStudent ? 'Student ID cannot be changed' : 'Auto-generated, but you can edit it'}
+            </p>
           </div>
 
           <div>
