@@ -21,38 +21,52 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check for token on mount
-    const token = localStorage.getItem('token');
-    if (token) {
+    const initAuth = () => {
       try {
-        const decoded = jwtDecode(token);
-        // Check if token is expired
-        if (decoded.exp * 1000 > Date.now()) {
-          setUser(decoded);
-          setIsAuthenticated(true);
-        } else {
-          localStorage.removeItem('token');
+        const token = localStorage.getItem('token');
+        if (token) {
+          const decoded = jwtDecode(token);
+          // Check if token is expired
+          if (decoded.exp * 1000 > Date.now()) {
+            setUser(decoded);
+            setIsAuthenticated(true);
+          } else {
+            console.warn('Token expired, removing...');
+            localStorage.removeItem('token');
+          }
         }
-      } catch {
+      } catch (error) {
+        console.error('Error initializing auth:', error);
         localStorage.removeItem('token');
+      } finally {
+        // Ensure loading is set to false regardless of success or failure
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = async (email, password) => {
     try {
       const response = await loginApi(email, password);
-      // Backend returns token in response.data.token
-      const { token } = response.data;
+      // Handle different response structures: { token } or { data: { token } }
+      const token = response.token || response.data?.token;
+      
+      if (!token) {
+        throw new Error('No token received from server');
+      }
+
       localStorage.setItem('token', token);
       const decoded = jwtDecode(token);
       setUser(decoded);
       setIsAuthenticated(true);
       return { success: true };
     } catch (err) {
+      console.error('Login error:', err);
       return { 
         success: false, 
-        error: err.response?.data?.message || 'Login failed' 
+        error: err.response?.data?.message || err.message || 'Login failed' 
       };
     }
   };
