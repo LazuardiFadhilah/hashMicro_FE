@@ -97,14 +97,6 @@ export default function GradesPage() {
     }
   };
 
-  const calculateFinalScore = (score, attendance) => {
-    return attendance >= 80 ? score + 5 : score;
-  };
-
-  const getStatus = (finalScore) => {
-    return finalScore >= 60 ? 'Pass' : 'Fail';
-  };
-
   return (
     <PrivateRoute>
       <div className="flex h-screen bg-gray-50">

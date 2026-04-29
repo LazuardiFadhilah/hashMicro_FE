@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Use timeout hook to prevent infinite loading
-  useAuthTimeout(loading, isAuthenticated);
+  useAuthTimeout(loading);
 
   useEffect(() => {
     // Check for token on mount

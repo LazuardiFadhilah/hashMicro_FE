@@ -39,8 +39,7 @@ export default function CheckerPage() {
   const highlightMatches = () => {
     if (!result) return input1;
 
-    // Get unique characters from input1
-    const compareInput1 = type === 'insensitive' ? input1.toLowerCase() : input1;
+    // Get comparison strings based on case sensitivity
     const compareInput2 = type === 'insensitive' ? input2.toLowerCase() : input2;
     
     const chars = input1.split('');

@@ -2,6 +2,8 @@
  * Authentication utilities for session management
  */
 
+import { jwtDecode } from 'jwt-decode';
+
 /**
  * Clear all authentication data and cached state
  */
@@ -37,10 +39,9 @@ export const isTokenValid = (token) => {
   if (!token) return false;
   
   try {
-    // Import jwtDecode dynamically to avoid SSR issues
+    // Check if we're in browser environment
     if (typeof window === 'undefined') return false;
     
-    const { jwtDecode } = require('jwt-decode');
     const decoded = jwtDecode(token);
     return decoded.exp * 1000 > Date.now();
   } catch (error) {

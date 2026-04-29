@@ -4,7 +4,7 @@ import { forceLogout } from '@/utils/authUtils';
 /**
  * Hook to handle authentication timeout and prevent infinite loading
  */
-export const useAuthTimeout = (loading, isAuthenticated) => {
+export const useAuthTimeout = (loading) => {
   const timeoutRef = useRef(null);
   const startTimeRef = useRef(Date.now());
 
